@@ -10,11 +10,25 @@ if (!process.env.DATABASE_URL) {
 }
 
 console.log('🔗 Connecting to database:', process.env.DATABASE_URL.replace(/:[^:@]+@/, ':****@'));
+console.log('🔒 Environment:', process.env.NODE_ENV);
+
+// SSL configuration for Render PostgreSQL
+const sslConfig = process.env.NODE_ENV === 'production' ? {
+  rejectUnauthorized: false,
+  require: true,
+  ca: undefined // Let the system handle certificate validation
+} : false;
+
+console.log('🔒 SSL Config:', sslConfig ? 'Enabled with rejectUnauthorized: false' : 'Disabled');
 
 // Create PostgreSQL connection pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: sslConfig,
+  // Additional connection options for Render
+  connectionTimeoutMillis: 30000,
+  idleTimeoutMillis: 30000,
+  max: 20
 });
 
 // Test database connection

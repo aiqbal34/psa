@@ -88,6 +88,18 @@ If the `render.yaml` linking isn't working:
 
 **⚠️ CRITICAL**: Always use the **External** Database URL (with `.oregon-postgres.render.com`), not the Internal one!
 
+#### Check 5: SSL/TLS Connection Issues
+If you see `SSL/TLS required` errors:
+```
+error: SSL/TLS required
+```
+
+This means Render's PostgreSQL requires SSL connections. The app is configured to handle this automatically in production, but if you still see this error:
+
+1. Ensure `NODE_ENV=production` is set in your environment variables
+2. The SSL configuration should automatically use `{ rejectUnauthorized: false, require: true }`
+3. If the issue persists, check that your DATABASE_URL is the External URL (not Internal)
+
 ### Step 4: Deploy Backend
 
 1. Render will automatically deploy your backend

@@ -16,9 +16,10 @@ const nextConfig = {
   images: {
     domains: [],
   },
-  experimental: {
-    optimizeCss: true,
-  },
+  // Disabled experimental CSS optimization due to critters dependency issues
+  // experimental: {
+  //   optimizeCss: true,
+  // },
 };
 
 module.exports = nextConfig;
