@@ -1,6 +1,16 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Validate DATABASE_URL
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL environment variable is not set!');
+  console.error('📝 Please set DATABASE_URL to your PostgreSQL connection string');
+  console.error('🔗 Format: postgresql://username:password@hostname:port/database_name');
+  process.exit(1);
+}
+
+console.log('🔗 Connecting to database:', process.env.DATABASE_URL.replace(/:[^:@]+@/, ':****@'));
+
 // Create PostgreSQL connection pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

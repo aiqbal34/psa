@@ -49,6 +49,45 @@ DATABASE_URL=[Your PostgreSQL External Database URL from Render]
 CORS_ORIGINS=https://ucdpakipsa.vercel.app,https://ucdpakipsa.io
 ```
 
+**⚠️ IMPORTANT**: Make sure to use the **External Database URL**, not the Internal one. The External URL is accessible from your web service.
+
+### Step 4: Troubleshooting Database Connection Issues
+
+If you see `ECONNREFUSED` errors like:
+```
+Error: connect ECONNREFUSED ::1:5432
+Error: connect ECONNREFUSED 127.0.0.1:5432
+```
+
+This means your app is trying to connect to localhost instead of the Render database. Here's how to fix it:
+
+#### Check 1: Verify DATABASE_URL is Set
+1. Go to your Render web service dashboard
+2. Click on "Environment" tab
+3. Ensure `DATABASE_URL` is present and correctly formatted
+4. The URL should look like: `postgresql://username:password@hostname:port/database_name`
+
+#### Check 2: Ensure Database Service Exists
+1. Go to Render Dashboard → Databases
+2. Verify your PostgreSQL database (`ucdpakipsa-db`) is running
+3. Copy the "External Database URL" (not Internal)
+4. Paste it as the `DATABASE_URL` environment variable
+
+#### Check 3: Service Dependencies
+1. Ensure your database is created BEFORE deploying the web service
+2. The web service should wait for the database to be ready
+3. Check the database status - it should show "Available"
+
+#### Check 4: Manual Environment Variable Setup
+If the `render.yaml` linking isn't working:
+1. Go to your web service → Environment
+2. Delete the existing `DATABASE_URL` variable
+3. Add a new one with the actual connection string from your database service
+4. **Use the EXTERNAL Database URL**: `postgresql://aiqbal34:geleNLrHaAAOGARWPYr7uSPjwl52k99F@dpg-d29etg7diees73clqh9g-a.oregon-postgres.render.com/ucdpakipsa_polls`
+5. Redeploy the service
+
+**⚠️ CRITICAL**: Always use the **External** Database URL (with `.oregon-postgres.render.com`), not the Internal one!
+
 ### Step 4: Deploy Backend
 
 1. Render will automatically deploy your backend
