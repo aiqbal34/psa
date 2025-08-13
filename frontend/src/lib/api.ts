@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+// Use relative URLs in production (Vercel will rewrite them), localhost in development
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '' // Use relative URLs for Vercel rewrites
+  : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
