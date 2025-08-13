@@ -72,9 +72,9 @@ export default function HomePage() {
     }
   };
 
-  const handleVote = async (pollId: number, optionId: number) => {
+  const handleVote = async (pollId: number, optionId: number, voterName: string) => {
     try {
-      const result = await pollsApi.vote(pollId, { optionId });
+      const result = await pollsApi.vote(pollId, { optionId, voterName });
       
       // Update the poll in the list with new results
       setPolls(prevPolls => 
@@ -205,6 +205,7 @@ export default function HomePage() {
               poll={poll}
               onVote={handleVote}
               onEdit={openEditModal}
+              showResults={poll.total_votes > 0}
             />
           ))}
         </div>

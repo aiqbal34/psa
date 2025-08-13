@@ -17,7 +17,7 @@ services:
           name: ucdpakipsa-db
           property: connectionString
       - key: CORS_ORIGINS
-        value: https://ucdpakipsa.io,https://www.ucdpakipsa.io,https://ucdpakipsa.vercel.app
+        value: https://ucdpakipsa.io,https://www.ucdpakipsa.io,https://ucdpakipsa.vercel.app,https://psa-oboc.vercel.app
 
 databases:
   - name: ucdpakipsa-db

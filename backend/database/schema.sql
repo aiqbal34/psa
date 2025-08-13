@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS votes (
     id SERIAL PRIMARY KEY,
     poll_id INTEGER REFERENCES polls(id) ON DELETE CASCADE,
     option_id INTEGER NOT NULL,
+    voter_name VARCHAR(100) NOT NULL,
     voted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -21,6 +22,10 @@ CREATE TABLE IF NOT EXISTS votes (
 CREATE INDEX IF NOT EXISTS idx_polls_created_at ON polls(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_votes_poll_id ON votes(poll_id);
 CREATE INDEX IF NOT EXISTS idx_votes_option_id ON votes(option_id);
+CREATE INDEX IF NOT EXISTS idx_votes_voter_name ON votes(voter_name);
+
+-- Add unique constraint to prevent duplicate voting by same name on same poll
+ALTER TABLE votes ADD CONSTRAINT unique_voter_per_poll UNIQUE (poll_id, voter_name);
 
 -- Create a function to update the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -59,6 +64,6 @@ INSERT INTO polls (question, options) VALUES
 );
 
 -- Insert sample votes
-INSERT INTO votes (poll_id, option_id) VALUES 
-(1, 1), (1, 2), (1, 1), (1, 3), (1, 2), (1, 1),
-(2, 3), (2, 3), (2, 2), (2, 4), (2, 3);
+INSERT INTO votes (poll_id, option_id, voter_name) VALUES 
+(1, 1, 'Alice'), (1, 2, 'Bob'), (1, 1, 'Charlie'), (1, 3, 'David'), (1, 2, 'Eve'), (1, 1, 'Frank'),
+(2, 3, 'Grace'), (2, 3, 'Henry'), (2, 2, 'Irene'), (2, 4, 'Jack'), (2, 3, 'Kate');

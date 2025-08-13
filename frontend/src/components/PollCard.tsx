@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 
 interface PollCardProps {
   poll: Poll;
-  onVote?: (pollId: number, optionId: number) => Promise<void>;
+  onVote?: (pollId: number, optionId: number, voterName: string) => Promise<void>;
   onEdit?: (poll: Poll) => void;
   showResults?: boolean;
   isVoting?: boolean;
@@ -21,22 +21,33 @@ const PollCard: React.FC<PollCardProps> = ({
   isVoting = false 
 }) => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [hasVoted, setHasVoted] = useState(showResults);
+  const [voterName, setVoterName] = useState('');
+  const [hasUserVoted, setHasUserVoted] = useState(false); // Track if current user has voted
   const [localResults, setLocalResults] = useState<PollOption[]>(poll.options);
   const [totalVotes, setTotalVotes] = useState(poll.total_votes);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Update local state when poll prop changes
+  React.useEffect(() => {
+    setLocalResults(poll.options);
+    setTotalVotes(poll.total_votes);
+  }, [poll.options, poll.total_votes]);
+
+  // Determine whether to show results
+  const shouldShowResults = hasUserVoted || showResults;
+
   const handleVote = async () => {
-    if (!selectedOption || !onVote || isSubmitting) return;
+    if (!selectedOption || !onVote || isSubmitting || !voterName.trim()) return;
 
     setIsSubmitting(true);
     try {
-      await onVote(poll.id, selectedOption);
-      setHasVoted(true);
+      await onVote(poll.id, selectedOption, voterName.trim());
+      setHasUserVoted(true);
       toast.success('Vote recorded successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to vote:', error);
-      toast.error('Failed to record vote. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Failed to record vote. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -72,6 +83,8 @@ const PollCard: React.FC<PollCardProps> = ({
   };
 
   const colors = generateColors(poll.options.length);
+
+
 
   return (
     <div className="card hover-lift">
@@ -122,7 +135,7 @@ const PollCard: React.FC<PollCardProps> = ({
       </div>
 
       {/* Poll Content */}
-      {hasVoted || showResults ? (
+      {shouldShowResults ? (
         <PollResults 
           options={localResults} 
           totalVotes={totalVotes}
@@ -165,12 +178,31 @@ const PollCard: React.FC<PollCardProps> = ({
             </label>
           ))}
 
-          {/* Vote Button */}
+          {/* Name Input and Vote Button */}
           {onVote && (
-            <div className="pt-4 border-t border-gray-100">
+            <div className="pt-4 border-t border-gray-100 space-y-3">
+              <div>
+                <label htmlFor={`voter-name-${poll.id}`} className="block text-sm font-medium text-gray-700 mb-2">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  id={`voter-name-${poll.id}`}
+                  value={voterName}
+                  onChange={(e) => setVoterName(e.target.value)}
+                  placeholder="Enter your name to vote"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  disabled={isSubmitting}
+                  maxLength={100}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Your name is required to prevent duplicate voting but won't be displayed publicly.
+                </p>
+              </div>
+              
               <button
                 onClick={handleVote}
-                disabled={!selectedOption || isSubmitting}
+                disabled={!selectedOption || !voterName.trim() || isSubmitting}
                 className="btn btn-primary btn-md w-full"
               >
                 {isSubmitting ? (
@@ -191,7 +223,7 @@ const PollCard: React.FC<PollCardProps> = ({
       )}
 
       {/* Poll Stats */}
-      {(hasVoted || showResults) && totalVotes > 0 && (
+      {shouldShowResults && totalVotes > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-100">
           <div className="flex items-center justify-between text-sm text-gray-500">
             <span>Total votes: {totalVotes}</span>

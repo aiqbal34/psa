@@ -75,6 +75,7 @@ const initializeDatabase = async () => {
           id SERIAL PRIMARY KEY,
           poll_id INTEGER REFERENCES polls(id) ON DELETE CASCADE,
           option_id INTEGER NOT NULL,
+          voter_name VARCHAR(100) NOT NULL,
           voted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -83,6 +84,37 @@ const initializeDatabase = async () => {
     await query(`CREATE INDEX IF NOT EXISTS idx_polls_created_at ON polls(created_at DESC)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_votes_poll_id ON votes(poll_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_votes_option_id ON votes(option_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_votes_voter_name ON votes(voter_name)`);
+
+    // Add voter_name column if it doesn't exist (migration for existing databases)
+    await query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'votes' AND column_name = 'voter_name'
+        ) THEN
+          ALTER TABLE votes ADD COLUMN voter_name VARCHAR(100);
+          -- For existing votes, set a default name
+          UPDATE votes SET voter_name = 'Anonymous_' || id WHERE voter_name IS NULL;
+          -- Make the column NOT NULL
+          ALTER TABLE votes ALTER COLUMN voter_name SET NOT NULL;
+        END IF;
+      END $$;
+    `);
+
+    // Add unique constraint to prevent duplicate voting by same name on same poll
+    await query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint 
+          WHERE conname = 'unique_voter_per_poll'
+        ) THEN
+          ALTER TABLE votes ADD CONSTRAINT unique_voter_per_poll UNIQUE (poll_id, voter_name);
+        END IF;
+      END $$;
+    `);
 
     // Create update trigger function
     await query(`

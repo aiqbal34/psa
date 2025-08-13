@@ -22,6 +22,10 @@ const validatePoll = [
 const validateVote = [
   param('id').isInt({ min: 1 }).withMessage('Invalid poll ID'),
   body('optionId').isInt({ min: 1 }).withMessage('Invalid option ID'),
+  body('voterName')
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Voter name must be between 1 and 100 characters'),
 ];
 
 const validatePollId = [
@@ -44,6 +48,7 @@ const handleValidationErrors = (req, res, next) => {
 // GET /api/polls - Get all polls with vote counts
 router.get('/', async (req, res) => {
   try {
+    // Get all polls with total vote counts using a single query
     const pollsResult = await query(`
       SELECT 
         p.*,
@@ -59,14 +64,43 @@ router.get('/', async (req, res) => {
       ORDER BY p.created_at DESC
     `);
 
-    const polls = pollsResult.rows.map(poll => ({
-      ...poll,
-      total_votes: parseInt(poll.total_votes)
-    }));
+    // Get vote counts per option for all polls in one query
+    const allVotesResult = await query(`
+      SELECT 
+        poll_id,
+        option_id,
+        COUNT(*) as vote_count
+      FROM votes 
+      GROUP BY poll_id, option_id
+    `);
+
+    // Create a map of vote counts by poll and option
+    const voteMap = {};
+    allVotesResult.rows.forEach(row => {
+      if (!voteMap[row.poll_id]) {
+        voteMap[row.poll_id] = {};
+      }
+      voteMap[row.poll_id][row.option_id] = parseInt(row.vote_count);
+    });
+
+    // Add vote counts to poll options
+    const pollsWithVotes = pollsResult.rows.map(poll => {
+      const pollVotes = voteMap[poll.id] || {};
+      const optionsWithVotes = poll.options.map(option => ({
+        ...option,
+        votes: pollVotes[option.id] || 0
+      }));
+
+      return {
+        ...poll,
+        options: optionsWithVotes,
+        total_votes: parseInt(poll.total_votes)
+      };
+    });
 
     res.json({
       success: true,
-      data: polls
+      data: pollsWithVotes
     });
   } catch (error) {
     console.error('Error fetching polls:', error);
@@ -209,7 +243,7 @@ router.put('/:id', validatePollId, validatePoll, handleValidationErrors, async (
 router.post('/:id/vote', validateVote, handleValidationErrors, async (req, res) => {
   try {
     const pollId = req.params.id;
-    const { optionId } = req.body;
+    const { optionId, voterName } = req.body;
 
     // Check if poll exists and option is valid
     const pollResult = await query('SELECT options FROM polls WHERE id = $1', [pollId]);
@@ -231,10 +265,23 @@ router.post('/:id/vote', validateVote, handleValidationErrors, async (req, res) 
       });
     }
 
+    // Check if this voter has already voted on this poll
+    const existingVoteResult = await query(
+      'SELECT id FROM votes WHERE poll_id = $1 AND voter_name = $2',
+      [pollId, voterName.trim()]
+    );
+
+    if (existingVoteResult.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already voted on this poll'
+      });
+    }
+
     // Record the vote
     await query(
-      'INSERT INTO votes (poll_id, option_id) VALUES ($1, $2)',
-      [pollId, optionId]
+      'INSERT INTO votes (poll_id, option_id, voter_name) VALUES ($1, $2, $3)',
+      [pollId, optionId, voterName.trim()]
     );
 
     // Get updated poll results
@@ -301,6 +348,42 @@ router.delete('/:id', validatePollId, handleValidationErrors, async (req, res) =
     res.status(500).json({
       success: false,
       message: 'Failed to delete poll'
+    });
+  }
+});
+
+// POST /api/polls/clear-database - Clear database except for the first poll
+router.post('/clear-database', async (req, res) => {
+  try {
+    // Get the first poll (oldest one) to keep
+    const firstPollResult = await query(
+      'SELECT id FROM polls ORDER BY created_at ASC LIMIT 1'
+    );
+
+    if (firstPollResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No polls found to preserve'
+      });
+    }
+
+    const pollToKeep = firstPollResult.rows[0].id;
+
+    // Delete all votes except for the poll we're keeping
+    await query('DELETE FROM votes WHERE poll_id != $1', [pollToKeep]);
+
+    // Delete all polls except the one we're keeping
+    const deleteResult = await query('DELETE FROM polls WHERE id != $1', [pollToKeep]);
+
+    res.json({
+      success: true,
+      message: `Database cleared successfully. Kept poll ID ${pollToKeep} and deleted ${deleteResult.rowCount} other polls.`
+    });
+  } catch (error) {
+    console.error('Error clearing database:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear database'
     });
   }
 });

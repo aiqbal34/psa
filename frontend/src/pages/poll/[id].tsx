@@ -39,9 +39,9 @@ export default function PollPage() {
     }
   };
 
-  const handleVote = async (pollId: number, optionId: number) => {
+  const handleVote = async (pollId: number, optionId: number, voterName: string) => {
     try {
-      const result = await pollsApi.vote(pollId, { optionId });
+      const result = await pollsApi.vote(pollId, { optionId, voterName });
       
       if (poll) {
         setPoll({

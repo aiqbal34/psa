@@ -1,7 +1,9 @@
 import React from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { Toaster } from 'react-hot-toast';
-import { Vote, BarChart3 } from 'lucide-react';
+import { Vote, BarChart3, Home, TrendingUp } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,6 +16,13 @@ const Layout: React.FC<LayoutProps> = ({
   title = 'UCDPakiPSA Polls',
   description = 'Create and participate in anonymous polls - no login required!'
 }) => {
+  const router = useRouter();
+  
+  const navigationItems = [
+    { name: 'Polls', href: '/', icon: Home, current: router.pathname === '/' },
+    { name: 'Results', href: '/results', icon: TrendingUp, current: router.pathname === '/results' },
+  ];
+
   return (
     <>
       <Head>
@@ -74,6 +83,31 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
           </div>
         </header>
+
+        {/* Navigation Tabs */}
+        <nav className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex space-x-8">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
+                      item.current
+                        ? 'border-primary-500 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } transition-colors duration-200`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

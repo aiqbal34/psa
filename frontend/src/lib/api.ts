@@ -56,6 +56,7 @@ export interface CreatePollData {
 
 export interface VoteData {
   optionId: number;
+  voterName: string;
 }
 
 export interface ApiResponse<T> {
@@ -143,6 +144,20 @@ export const pollsApi = {
       await api.delete(`/api/polls/${id}`);
     } catch (error) {
       console.error(`Failed to delete poll ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Clear database except for one poll
+  clearDatabase: async (): Promise<{ message: string }> => {
+    try {
+      const response = await api.post<ApiResponse<{ message: string }>>('/api/polls/clear-database');
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to clear database');
+      }
+      return { message: response.data.message || 'Database cleared successfully' };
+    } catch (error) {
+      console.error('Failed to clear database:', error);
       throw error;
     }
   },

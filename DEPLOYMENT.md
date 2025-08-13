@@ -46,7 +46,7 @@ In Render web service → Environment, add:
 NODE_ENV=production
 PORT=10000
 DATABASE_URL=[Your PostgreSQL External Database URL from Render]
-CORS_ORIGINS=https://ucdpakipsa.vercel.app,https://ucdpakipsa.io
+CORS_ORIGINS=https://psa-oboc.vercel.app,https://ucdpakipsa.vercel.app,https://ucdpakipsa.io
 ```
 
 **⚠️ IMPORTANT**: Make sure to use the **External Database URL**, not the Internal one. The External URL is accessible from your web service.
@@ -159,7 +159,7 @@ NEXT_PUBLIC_API_URL=https://ucdpakipsa-backend.onrender.com
 NODE_ENV=production
 PORT=10000
 DATABASE_URL=[Your Render PostgreSQL External Database URL]
-CORS_ORIGINS=https://ucdpakipsa.io,https://www.ucdpakipsa.io,https://ucdpakipsa.vercel.app
+CORS_ORIGINS=https://ucdpakipsa.io,https://www.ucdpakipsa.io,https://ucdpakipsa.vercel.app,https://psa-oboc.vercel.app
 ```
 
 ### Frontend (Vercel)
