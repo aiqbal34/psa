@@ -1,35 +1,87 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Validate DATABASE_URL
-if (!process.env.DATABASE_URL) {
-  console.error('❌ DATABASE_URL environment variable is not set!');
-  console.error('📝 Please set DATABASE_URL to your PostgreSQL connection string');
-  console.error('🔗 Format: postgresql://username:password@hostname:port/database_name');
-  process.exit(1);
+const isProduction = process.env.NODE_ENV === 'production';
+const hasCloudSql = Boolean(process.env.CLOUD_SQL_CONNECTION_NAME);
+const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+
+// Build pool configuration supporting:
+// 1) Cloud SQL Unix socket via CLOUD_SQL_CONNECTION_NAME
+// 2) Full DATABASE_URL
+// 3) Discrete host/user/password variables for local/dev
+let poolConfig;
+
+if (hasCloudSql) {
+  const requiredVars = ['DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+  const missing = requiredVars.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    console.error('❌ Missing required env vars for Cloud SQL:', missing.join(', '));
+    console.error('📝 Required when using CLOUD_SQL_CONNECTION_NAME: DB_USER, DB_PASSWORD, DB_NAME');
+    process.exit(1);
+  }
+
+  poolConfig = {
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    host: `/cloudsql/${process.env.CLOUD_SQL_CONNECTION_NAME}`,
+    port: Number(process.env.DB_PORT || 5432),
+    ssl: false, // Unix sockets do not require SSL
+    connectionTimeoutMillis: 30000,
+    idleTimeoutMillis: 30000,
+    max: 20
+  };
+
+  console.log('🔗 Connecting via Cloud SQL Unix socket:', poolConfig.host);
+  console.log('🔒 Environment:', process.env.NODE_ENV);
+} else if (hasDatabaseUrl) {
+  const enableSsl = process.env.DB_SSL === 'true' || isProduction;
+  const sslConfig = enableSsl ? { rejectUnauthorized: false, require: true, ca: undefined } : false;
+
+  poolConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: sslConfig,
+    connectionTimeoutMillis: 30000,
+    idleTimeoutMillis: 30000,
+    max: 20
+  };
+
+  const safeUrl = process.env.DATABASE_URL.replace(/:[^:@]+@/, ':****@');
+  console.log('🔗 Connecting via DATABASE_URL:', safeUrl);
+  console.log('🔒 SSL:', sslConfig ? 'enabled' : 'disabled');
+  console.log('🔒 Environment:', process.env.NODE_ENV);
+} else {
+  // Fallback for local development with discrete variables
+  const requiredVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+  const missing = requiredVars.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    console.error('❌ Missing required database environment variables:', missing.join(', '));
+    console.error('📝 Please set either:');
+    console.error('   1) DATABASE_URL (full connection string), or');
+    console.error('   2) CLOUD_SQL_CONNECTION_NAME + DB_USER + DB_PASSWORD + DB_NAME, or');
+    console.error('   3) DB_HOST + DB_USER + DB_PASSWORD + DB_NAME');
+    process.exit(1);
+  }
+
+  poolConfig = {
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT || 5432),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 30000,
+    idleTimeoutMillis: 30000,
+    max: 20
+  };
+
+  console.log('🔗 Connecting via discrete variables to:', process.env.DB_HOST);
+  console.log('🔒 SSL:', poolConfig.ssl ? 'enabled' : 'disabled');
+  console.log('🔒 Environment:', process.env.NODE_ENV);
 }
 
-console.log('🔗 Connecting to database:', process.env.DATABASE_URL.replace(/:[^:@]+@/, ':****@'));
-console.log('🔒 Environment:', process.env.NODE_ENV);
-
-// SSL configuration for Render PostgreSQL
-const sslConfig = process.env.NODE_ENV === 'production' ? {
-  rejectUnauthorized: false,
-  require: true,
-  ca: undefined // Let the system handle certificate validation
-} : false;
-
-console.log('🔒 SSL Config:', sslConfig ? 'Enabled with rejectUnauthorized: false' : 'Disabled');
-
 // Create PostgreSQL connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: sslConfig,
-  // Additional connection options for Render
-  connectionTimeoutMillis: 30000,
-  idleTimeoutMillis: 30000,
-  max: 20
-});
+const pool = new Pool(poolConfig);
 
 // Test database connection
 pool.on('connect', () => {
