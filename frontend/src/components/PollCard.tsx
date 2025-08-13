@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Poll, PollOption } from '@/lib/api';
 import { formatDate, calculatePercentage, generateColors } from '@/lib/utils';
 import { Clock, Users, Edit, BarChart3, Share2 } from 'lucide-react';
 import PollResults from './PollResults';
 import toast from 'react-hot-toast';
+import pollsApi from '@/lib/api';
 
 interface PollCardProps {
   poll: Poll;
@@ -26,12 +27,39 @@ const PollCard: React.FC<PollCardProps> = ({
   const [localResults, setLocalResults] = useState<PollOption[]>(poll.options);
   const [totalVotes, setTotalVotes] = useState(poll.total_votes);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingVoteStatus, setIsCheckingVoteStatus] = useState(false);
 
   // Update local state when poll prop changes
   React.useEffect(() => {
     setLocalResults(poll.options);
     setTotalVotes(poll.total_votes);
   }, [poll.options, poll.total_votes]);
+
+  // Check if voter has already voted when name changes
+  useEffect(() => {
+    const checkVoteStatus = async () => {
+      if (!voterName.trim()) {
+        setHasUserVoted(false);
+        return;
+      }
+
+      setIsCheckingVoteStatus(true);
+      try {
+        const status = await pollsApi.checkVoteStatus(poll.id, voterName.trim());
+        setHasUserVoted(status.hasVoted);
+      } catch (error) {
+        console.error('Failed to check vote status:', error);
+        // If there's an error checking, assume they haven't voted
+        setHasUserVoted(false);
+      } finally {
+        setIsCheckingVoteStatus(false);
+      }
+    };
+
+    // Debounce the check to avoid too many API calls
+    const timeoutId = setTimeout(checkVoteStatus, 500);
+    return () => clearTimeout(timeoutId);
+  }, [voterName, poll.id]);
 
   // Determine whether to show results
   const shouldShowResults = hasUserVoted || showResults;
@@ -47,7 +75,14 @@ const PollCard: React.FC<PollCardProps> = ({
     } catch (error: any) {
       console.error('Failed to vote:', error);
       const errorMessage = error.response?.data?.message || 'Failed to record vote. Please try again.';
-      toast.error(errorMessage);
+      
+      // If the error is "already voted", update the state to show results
+      if (errorMessage.includes('already voted')) {
+        setHasUserVoted(true);
+        toast.error('You have already voted on this poll. Showing your results.');
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -191,24 +226,43 @@ const PollCard: React.FC<PollCardProps> = ({
                   value={voterName}
                   onChange={(e) => setVoterName(e.target.value)}
                   placeholder="Enter your name to vote"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                    hasUserVoted ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                  }`}
                   disabled={isSubmitting}
                   maxLength={100}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Your name is required to prevent duplicate voting but won't be displayed publicly.
-                </p>
+                <div className="mt-1">
+                  {isCheckingVoteStatus && voterName.trim() && (
+                    <p className="text-xs text-blue-600">Checking voting status...</p>
+                  )}
+                  {hasUserVoted && voterName.trim() && !isCheckingVoteStatus && (
+                    <p className="text-xs text-green-600">✓ You have already voted on this poll</p>
+                  )}
+                  {!hasUserVoted && !isCheckingVoteStatus && (
+                    <p className="text-xs text-gray-500">
+                      Your name is required to prevent duplicate voting but won't be displayed publicly.
+                    </p>
+                  )}
+                </div>
               </div>
               
               <button
                 onClick={handleVote}
-                disabled={!selectedOption || !voterName.trim() || isSubmitting}
-                className="btn btn-primary btn-md w-full"
+                disabled={!selectedOption || !voterName.trim() || isSubmitting || hasUserVoted}
+                className={`btn btn-md w-full ${
+                  hasUserVoted ? 'btn-secondary cursor-not-allowed' : 'btn-primary'
+                }`}
               >
                 {isSubmitting ? (
                   <>
                     <div className="loading-spinner w-4 h-4 mr-2" />
                     Recording Vote...
+                  </>
+                ) : hasUserVoted ? (
+                  <>
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Already Voted
                   </>
                 ) : (
                   <>

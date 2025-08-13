@@ -164,6 +164,20 @@ export const pollsApi = {
       throw error;
     }
   },
+
+  // Check if a voter has already voted on a poll
+  checkVoteStatus: async (pollId: number, voterName: string): Promise<{ hasVoted: boolean; voterName: string }> => {
+    try {
+      const response = await api.get<ApiResponse<{ hasVoted: boolean; voterName: string }>>(`/api/polls/${pollId}/vote-status/${encodeURIComponent(voterName.trim())}`);
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to check vote status');
+      }
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to check vote status:', error);
+      throw error;
+    }
+  },
 };
 
-export default api;
+export default pollsApi;

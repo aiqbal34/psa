@@ -388,4 +388,40 @@ router.post('/clear-database', async (req, res) => {
   }
 });
 
+// Check if a voter has already voted on a specific poll
+router.get('/api/polls/:id/vote-status/:voterName', async (req, res) => {
+  try {
+    const { id: pollId, voterName } = req.params;
+
+    if (!voterName || voterName.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Voter name is required'
+      });
+    }
+
+    // Check if this voter has already voted on this poll
+    const existingVoteResult = await query(
+      'SELECT id FROM votes WHERE poll_id = $1 AND voter_name = $2',
+      [pollId, voterName.trim()]
+    );
+
+    const hasVoted = existingVoteResult.rows.length > 0;
+
+    res.json({
+      success: true,
+      data: {
+        hasVoted,
+        voterName: voterName.trim()
+      }
+    });
+  } catch (error) {
+    console.error('Error checking vote status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check vote status'
+    });
+  }
+});
+
 module.exports = router;
