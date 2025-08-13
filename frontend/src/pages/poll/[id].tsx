@@ -162,7 +162,7 @@ export default function PollPage() {
             <PollCard
               poll={poll}
               onVote={handleVote}
-              showResults={hasVotes}
+              showResults={false}
             />
           </div>
 

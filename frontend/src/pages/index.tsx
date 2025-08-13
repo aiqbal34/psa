@@ -205,7 +205,7 @@ export default function HomePage() {
               poll={poll}
               onVote={handleVote}
               onEdit={openEditModal}
-              showResults={poll.total_votes > 0}
+              showResults={false}
             />
           ))}
         </div>
