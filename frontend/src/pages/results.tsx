@@ -107,11 +107,11 @@ export default function ResultsPage() {
 
       {polls.length === 0 ? (
         <EmptyState
-          icon={BarChart3}
+          icon={<BarChart3 className="w-10 h-10 text-gray-400" />}
           title="No Polls Available"
           description="There are no polls to display results for."
           actionText="Create First Poll"
-          actionHref="/"
+          onAction={() => window.location.href = '/'}
         />
       ) : (
         <div className="space-y-8">
