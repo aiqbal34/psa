@@ -389,7 +389,7 @@ router.post('/clear-database', async (req, res) => {
 });
 
 // Check if a voter has already voted on a specific poll
-router.get('/api/polls/:id/vote-status/:voterName', async (req, res) => {
+router.get('/:id/vote-status/:voterName', async (req, res) => {
   try {
     const { id: pollId, voterName } = req.params;
 
