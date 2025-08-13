@@ -169,7 +169,7 @@ export const pollsApi = {
   checkVoteStatus: async (pollId: number, voterName: string): Promise<{ hasVoted: boolean; voterName: string }> => {
     try {
       const response = await api.get<ApiResponse<{ hasVoted: boolean; voterName: string }>>(`/api/polls/${pollId}/vote-status/${encodeURIComponent(voterName.trim())}`);
-      if (!response.data.success) {
+      if (!response.data.success || !response.data.data) {
         throw new Error(response.data.message || 'Failed to check vote status');
       }
       return response.data.data;
