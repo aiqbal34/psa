@@ -48,6 +48,12 @@ const handleValidationErrors = (req, res, next) => {
 // GET /api/polls - Get all polls with vote counts
 router.get('/', async (req, res) => {
   try {
+    // Set headers to prevent caching issues
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
     // Get all polls with total vote counts using a single query
     const pollsResult = await query(`
       SELECT 
@@ -114,6 +120,13 @@ router.get('/', async (req, res) => {
 // GET /api/polls/:id - Get specific poll with detailed results
 router.get('/:id', validatePollId, handleValidationErrors, async (req, res) => {
   try {
+    // Set headers to prevent caching issues
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     const pollId = req.params.id;
 
     // Get poll details
