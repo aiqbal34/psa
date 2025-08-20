@@ -1,7 +1,0 @@
-NODE_ENV: production
-DB_USER: ucdpakipsa_user
-DB_PASSWORD: qKoXrAhyU4wKJnjCbJ5tYMk8
-DB_NAME: ucdpakipsa_polls
-DB_PORT: "5432"
-CLOUD_SQL_CONNECTION_NAME: automationproject-463222:us-central1:ucdpakipsa-postgres
-CORS_ORIGINS: "http://localhost:3000,https://ucdpakipsa.io,https://www.ucdpakipsa.io,https://ucdpakipsa.vercel.app,https://psa-oboc.vercel.app"

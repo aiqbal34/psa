@@ -1,20 +1,31 @@
 {
-  "name": "ucdpakipsa-polling-website",
-  "version": "1.0.0",
-  "description": "Full-stack polling website for ucdpakipsa.io",
+  "name": "polls-webapp",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run dev",
-    "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "cd frontend && npm run build",
-    "build:backend": "cd backend && npm run build",
-    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
-    "start:frontend": "cd frontend && npm start",
-    "start:backend": "cd backend && npm start",
-    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.0.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "firebase": "^10.7.0",
+    "recharts": "^2.8.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/uuid": "^9.0.7",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31"
   }
-}
+} 
